@@ -1,6 +1,5 @@
 # import BlockRegistration
-using CenterIndexedArrays, Base.Test
-using Compat
+using CenterIndexedArrays, Test, Random
 
 CenterIndexedArray(Float32, 3, 5)
 @test_throws ErrorException CenterIndexedArray(Float32, 4, 5)
@@ -15,7 +14,7 @@ A = CenterIndexedArray(dat)
 @test A[0,0] == dat[2,3]
 k = 0
 for j = -2:2, i = -1:1
-    k += 1
+    global k += 1
     @test A[i,j] == dat[k]
 end
 @test_throws BoundsError A[3,5]
@@ -24,7 +23,7 @@ end
 @test_throws ErrorException A[:,-2:0]
 k = 0
 for j = -2:2, i = -1:1
-    A[i,j] = (k+=1)
+    A[i,j] = (global k+=1)
 end
 @test dat == reshape(1:15, 3, 5)
 @test_throws BoundsError A[3,5] = 15
@@ -34,7 +33,7 @@ iall = (-1:1).*ones(Int, 5)'
 jall = ones(Int,3).*(-2:2)'
 k = 0
 for I in eachindex(A)
-    k += 1
+    global k += 1
     @test I[1] == iall[k]
     @test I[2] == jall[k]
 end
@@ -42,7 +41,7 @@ end
 io = IOBuffer()
 show(io, MIME("text/plain"), A)
 str = String(take!(io))
-@test isempty(search(str, "undef"))
+@test isempty(something(findfirst(str, "undef"), 0:-1))
 
 # Iteration
 for (a,d) in zip(A, dat)
@@ -60,10 +59,8 @@ B = copy(A)
 
 @test minimum(A) == minimum(dat)
 @test maximum(A) == maximum(dat)
-# @test minimum(A,1) == minimum(dat,1)
-# @test maximum(A,2) == maximum(dat,2)
-@test minimum(A,1) == CenterIndexedArray(minimum(dat,1))
-@test maximum(A,2) == CenterIndexedArray(maximum(dat,2))
+@test minimum(A,dims=1) == CenterIndexedArray(minimum(dat,dims=1))
+@test maximum(A,dims=2) == CenterIndexedArray(maximum(dat,dims=2))
 
 amin, iamin = findmin(A)
 dmin, idmin = findmin(dat)
@@ -80,9 +77,12 @@ dmax, idmax = findmax(dat)
 fill!(A, 2)
 @test all(x->x==2, A)
 
-i, j = findn(A)
-@test vec(i) == vec(iall)
-@test vec(j) == vec(jall)
+ii, jj = begin
+    II = findall(!iszero, A)
+    (getindex.(II, 1), getindex.(II, 2))
+end
+@test vec(ii) == vec(iall)
+@test vec(jj) == vec(jall)
 
 rand!(dat)
 
@@ -92,15 +92,15 @@ rand!(dat)
 @test permutedims(A, (2,1)) == CenterIndexedArray(permutedims(dat, (2,1)))
 # @test ipermutedims(A, (2,1)) == CenterIndexedArray(ipermutedims(dat, (2,1)))
 
-@test cumsum(A, 1) == CenterIndexedArray(cumsum(dat, 1))
-@test cumsum(A, 2) == CenterIndexedArray(cumsum(dat, 2))
+@test cumsum(A, dims=1) == CenterIndexedArray(cumsum(dat, dims=1))
+@test cumsum(A, dims=2) == CenterIndexedArray(cumsum(dat, dims=2))
 
-@test mapslices(v->sort(v), A, 1) == CenterIndexedArray(mapslices(v->sort(v), dat, 1))
-@test mapslices(v->sort(v), A, 2) == CenterIndexedArray(mapslices(v->sort(v), dat, 2))
+@test mapslices(v->sort(v), A, dims=1) == CenterIndexedArray(mapslices(v->sort(v), dat, dims=1))
+@test mapslices(v->sort(v), A, dims=2) == CenterIndexedArray(mapslices(v->sort(v), dat, dims=2))
 
-@test flipdim(A, 1) == CenterIndexedArray(flipdim(dat, 1))
-@test flipdim(A, 2) == CenterIndexedArray(flipdim(dat, 2))
+@test reverse(A, dims=1) == CenterIndexedArray(reverse(dat, dims=1))
+@test reverse(A, dims=2) == CenterIndexedArray(reverse(dat, dims=2))
 
-@test A + 1 == CenterIndexedArray(dat + 1)
+@test A .+ 1 == CenterIndexedArray(dat .+ 1)
 @test 2*A == CenterIndexedArray(2*dat)
 @test A+A == CenterIndexedArray(dat+dat)
