@@ -1,7 +1,7 @@
 name = "CenterIndexedArrays"
 uuid = "46a7138f-0d70-54e1-8ada-fb8296f91f24"
 authors = ["Tim Holy <tim.holy@gmail.com>"]
-version = "0.0.0"
+version = "0.1.0"
 
 [deps]
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
