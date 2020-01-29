@@ -104,12 +104,11 @@ end
 end
 
 @testset "Display" begin
-    dat = rand(3,5)
-    A = CenterIndexedArray(dat)
+    A = CenterIndexedArray(reshape(1:15, 3, 5))
     io = IOBuffer()
     show(io, MIME("text/plain"), A)
     str = String(take!(io))
-    @test isempty(something(findfirst(str, "undef"), 0:-1))
+    @test endswith(str, "CenterIndexedArray(reshape(::UnitRange{$Int}, 3, 5)) with eltype $Int with indices SymRange(1)×SymRange(2):\n 1  4  7  10  13\n 2  5  8  11  14\n 3  6  9  12  15")
 end
 
 @testset "Operations" begin
