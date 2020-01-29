@@ -1,54 +1,11 @@
 module CenterIndexedArrays
 
-using Images, Interpolations
+using Interpolations, OffsetArrays
+using OffsetArrays: IdentityUnitRange
 
 export CenterIndexedArray
 
-## SymRange, an AbstractUnitRange that's symmetric around 0
-# These are used as indices for CenterIndexedArrays
-struct SymRange <: AbstractUnitRange{Int}
-    n::Int  # goes from -n:n
-end
-
-Base.first(r::SymRange) = -r.n
-Base.last(r::SymRange) = r.n
-
-#Base.start(r::SymRange) = first(r)
-#Base.done(r::SymRange, i) = i == last(r) + 1
-function iterate(r::SymRange)
-    r.n == 0 && return nothing
-    first(r), first(r)
-end
-
-function iterate(r::SymRange, s)
-    s == last(r) && return nothing
-    copy(s+1), s+1
-end
-
-@inline function Base.getindex(v::CenterIndexedArrays.SymRange, i::Int)
-    ret = first(v) + i - 1
-    @boundscheck abs(ret) <= v.n || Base.throw_boundserror(v, i)
-    ret
-end
-
-Base.intersect(r::SymRange, s::SymRange) = SymRange(min(last(r), last(s)))
-
-@inline function Base.getindex(r::SymRange, s::SymRange)
-    @boundscheck checkbounds(r, s)
-    s
-end
-
-Base.promote_rule(::Type{SymRange}, ::Type{UR}) where {UR<:AbstractUnitRange} =
-    UR
-Base.promote_rule(::Type{UnitRange{T2}}, ::Type{SymRange}) where {T2} =
-    UnitRange{promote_type(T2, Int)}
-function Base.convert(::Type{SymRange}, r::AbstractUnitRange)
-    first(r) == -last(r) || error("cannot convert $r to a SymRange")
-    SymRange(last(r))
-end
-
-Base.show(io::IO, r::SymRange) = print(io, "SymRange(", repr(last(r)), ')')
-
+include("symrange.jl")
 
 """
 A `CenterIndexedArray` is one for which the array center has indexes
@@ -67,39 +24,58 @@ struct CenterIndexedArray{T,N,A<:AbstractArray} <: AbstractArray{T,N}
 end
 
 CenterIndexedArray(A::AbstractArray{T,N}) where {T,N} = CenterIndexedArray{T,N,typeof(A)}(A)
-CenterIndexedArray(::Type{T}, dims) where {T} = CenterIndexedArray(Array{T}(undef, dims))
-CenterIndexedArray(::Type{T}, dims...) where {T} = CenterIndexedArray(Array{T}(undef, dims))
+CenterIndexedArray{T,N}(::UndefInitializer, sz::Vararg{<:Integer,N}) where {T,N} =
+    CenterIndexedArray(Array{T,N}(undef, sz...))
+CenterIndexedArray{T,N}(::UndefInitializer, sz::NTuple{N,Integer}) where {T,N} =
+    CenterIndexedArray(Array{T,N}(undef, sz))
+CenterIndexedArray{T}(::UndefInitializer, sz::Vararg{<:Integer,N}) where {T,N} =
+    CenterIndexedArray{T,N}(undef, sz...)
+CenterIndexedArray{T}(::UndefInitializer, sz::NTuple{N,Integer}) where {T,N} =
+    CenterIndexedArray{T,N}(undef, sz)
 
 # This is the AbstractArray default, but do this just to be sure
 Base.IndexStyle(::Type{A}) where {A<:CenterIndexedArray} = IndexCartesian()
 
 Base.size(A::CenterIndexedArray) = size(A.data)
 Base.axes(A::CenterIndexedArray) = map(SymRange, A.halfsize)
-function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymRange,Vararg{SymRange}}) where T
+
+const SymAx = Union{SymRange, Base.Slice{SymRange}}
+Base.axes(r::Base.Slice{SymRange}) = (r.indices,)
+
+function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx,Vararg{SymAx}}) where T
     data = Array{T}(undef, map(length, inds))
     CenterIndexedArray(data)
 end
-function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{Base.Slice{SymRange},Vararg{Base.Slice{SymRange}}}) where T
+function Base.similar(::Type{T}, inds::Tuple{SymAx, Vararg{SymAx}}) where T
     data = Array{T}(undef, map(length, inds))
     CenterIndexedArray(data)
 end
-function Base.similar(T::Union{Type,Function}, inds::Tuple{SymRange, Vararg{SymRange}})
-    data = Array{T}(undef, map(length, inds))
-    CenterIndexedArray(data)
+
+# This is incomplete: ideally we wouldn't need SymAx in the first slot
+# as long as there was at least one SymAx.
+function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx,Vararg{Union{Int,<:IdentityUnitRange,SymAx}}}) where T
+    torange(n) = isa(n, Int) ? Base.OneTo(n) : n
+    return OffsetArray{T}(undef, map(torange, inds))
 end
+
 
 function _halfsize(A::AbstractArray)
     all(isodd, size(A)) || error("Must have all-odd sizes")
     map(n->n>>UInt(1), size(A))
 end
 
-@inline function Base.getindex(A::CenterIndexedArray{T,N}, i::Vararg{Number,N}) where {T,N}
+@inline function Base.getindex(A::CenterIndexedArray{T,N}, i::Vararg{Int,N}) where {T,N}
     @boundscheck checkbounds(A, i...)
     @inbounds val = A.data[map(offset, A.halfsize, i)...]
     val
 end
 
-@inline function Base.getindex(A::CenterIndexedArray{T,N,I}, i::Vararg{Number,N}) where {T,N,I<:AbstractInterpolation}
+Base.@propagate_inbounds Base.getindex(A::CenterIndexedArray{T,N,I}, i::Vararg{Int,N}) where {T,N,I<:AbstractInterpolation} =
+    _getindex(A, i...)
+Base.@propagate_inbounds Base.getindex(A::CenterIndexedArray{T,N,I}, i::Vararg{Number,N}) where {T,N,I<:AbstractInterpolation} =
+    _getindex(A, i...)
+
+@inline function _getindex(A::CenterIndexedArray{T,N,I}, i::Vararg{Number,N}) where {T,N,I<:AbstractInterpolation}
     @boundscheck checkbounds(A, i...)
     @inbounds val = A.data(map(offset, A.halfsize, i)...)
     val
@@ -108,31 +84,20 @@ Base.throw_boundserror(A::CenterIndexedArray, I) = (Base.@_noinline_meta; throw(
 
 offset(off, i) = off+i+1
 
-const Index = Union{Colon,AbstractVector}
-
-Base.getindex(A::CenterIndexedArray{T,1}, I::Index) where {T} = CenterIndexedArray([A[i] for i in _cindex(A, 1, I)])
-Base.getindex(A::CenterIndexedArray{T,2}, I::Index, J::Index) where {T} = CenterIndexedArray([A[i,j] for i in _cindex(A,1,I), j in _cindex(A,2,J)])
-Base.getindex(A::CenterIndexedArray{T,3}, I::Index, J::Index, K::Index) where {T} = CenterIndexedArray([A[i,j,k] for i in _cindex(A,1,I), j in _cindex(A,2,J), k in _cindex(A,3,K)])
-
-_cindex(A::CenterIndexedArray, d, I::AbstractRange) = convert(SymRange, I)
-_cindex(A::CenterIndexedArray, d, I::AbstractVector) = error("unsupported, use a range")
-_cindex(A::CenterIndexedArray, d, ::Colon) = SymRange(A.halfsize[d])
-
-
-@inline function Base.setindex!(A::CenterIndexedArray{T,N}, v, i::Vararg{Number,N}) where {T,N}
+@inline function Base.setindex!(A::CenterIndexedArray{T,N}, v, i::Vararg{Int,N}) where {T,N}
     @boundscheck checkbounds(A, i...)
     @inbounds A.data[map(offset, A.halfsize, i)...] = v
     v
 end
-
-# TODO: make these behave sensibly in Base so that these are not needed
-# Base.vec(A::CenterIndexedArray) = vec(A.data)
-Base.minimum(A::CenterIndexedArray; dims=:) = (dims == :) ? minimum(A.data) : CenterIndexedArray(minimum(A.data, dims=dims))
-Base.maximum(A::CenterIndexedArray; dims=:) = (dims == :) ? maximum(A.data) : CenterIndexedArray(maximum(A.data, dims=dims))
 
 
 Base.BroadcastStyle(::Type{<:CenterIndexedArray}) = Broadcast.ArrayStyle{CenterIndexedArray}()
 function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{CenterIndexedArray}}, ::Type{ElType}) where ElType
     similar(ElType, axes(bc))
 end
+
+Base.parent(A::CenterIndexedArray) = A.data
+
+include("deprecated.jl")
+
 end  # module
