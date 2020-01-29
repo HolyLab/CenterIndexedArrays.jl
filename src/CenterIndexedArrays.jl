@@ -98,6 +98,13 @@ end
 
 Base.parent(A::CenterIndexedArray) = A.data
 
+function Base.showarg(io::IO, A::CenterIndexedArray, toplevel)
+    print(io, "CenterIndexedArray(")
+    Base.showarg(io, parent(A), false)
+    print(io, ')')
+    toplevel && print(io, " with eltype ", eltype(A))
+end
+
 include("deprecated.jl")
 
 end  # module
