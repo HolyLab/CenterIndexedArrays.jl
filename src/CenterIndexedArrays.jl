@@ -46,8 +46,8 @@ function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx,Vararg
     data = Array{T}(undef, map(length, inds))
     CenterIndexedArray(data)
 end
-function Base.similar(::Type{T}, inds::Tuple{SymAx, Vararg{SymAx}}) where T
-    data = Array{T}(undef, map(length, inds))
+function Base.similar(::Type{T}, inds::Tuple{SymAx, Vararg{SymAx}}) where T<:AbstractArray
+    data = Array{eltype(T)}(undef, map(length, inds))
     CenterIndexedArray(data)
 end
 
@@ -93,7 +93,7 @@ end
 
 Base.BroadcastStyle(::Type{<:CenterIndexedArray}) = Broadcast.ArrayStyle{CenterIndexedArray}()
 function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{CenterIndexedArray}}, ::Type{ElType}) where ElType
-    similar(ElType, axes(bc))
+    similar(Array{ElType}, axes(bc))
 end
 
 Base.parent(A::CenterIndexedArray) = A.data
