@@ -172,4 +172,5 @@ end
     @test A .+ 1 == CenterIndexedArray(dat .+ 1)
     @test 2*A == CenterIndexedArray(2*dat)
     @test A+A == CenterIndexedArray(dat+dat)
+    @test isa(A .+ 1, CenterIndexedArray)
 end
