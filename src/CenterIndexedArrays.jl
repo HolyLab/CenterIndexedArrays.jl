@@ -24,11 +24,11 @@ struct CenterIndexedArray{T,N,A<:AbstractArray} <: AbstractArray{T,N}
 end
 
 CenterIndexedArray(A::AbstractArray{T,N}) where {T,N} = CenterIndexedArray{T,N,typeof(A)}(A)
-CenterIndexedArray{T,N}(::UndefInitializer, sz::Vararg{<:Integer,N}) where {T,N} =
+CenterIndexedArray{T,N}(::UndefInitializer, sz::Vararg{Integer,N}) where {T,N} =
     CenterIndexedArray(Array{T,N}(undef, sz...))
 CenterIndexedArray{T,N}(::UndefInitializer, sz::NTuple{N,Integer}) where {T,N} =
     CenterIndexedArray(Array{T,N}(undef, sz))
-CenterIndexedArray{T}(::UndefInitializer, sz::Vararg{<:Integer,N}) where {T,N} =
+CenterIndexedArray{T}(::UndefInitializer, sz::Vararg{Integer,N}) where {T,N} =
     CenterIndexedArray{T,N}(undef, sz...)
 CenterIndexedArray{T}(::UndefInitializer, sz::NTuple{N,Integer}) where {T,N} =
     CenterIndexedArray{T,N}(undef, sz)
