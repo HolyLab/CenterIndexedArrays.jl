@@ -174,3 +174,14 @@ end
     @test A+A == CenterIndexedArray(dat+dat)
     @test isa(A .+ 1, CenterIndexedArray)
 end
+
+@testset "Interpolations integration" begin
+    y = 1:3
+    yc = CenterIndexedArray(y)
+    itp = interpolate(yc, BSpline(Linear()))
+    @test itp(0.2) ≈ 2.2
+    y = [4.0, 1.0, 0.0, 1.0, 4.0]
+    yc = CenterIndexedArray(y)
+    itp = interpolate!(yc, BSpline(Quadratic(InPlaceQ(OnCell()))))
+    @test itp(0.2) ≈ 0.2^2
+end
