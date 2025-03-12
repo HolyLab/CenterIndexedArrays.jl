@@ -97,6 +97,7 @@ function Base.similar(bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{CenterIndex
 end
 
 Base.parent(A::CenterIndexedArray) = A.data
+Interpolations.popwrapper(A::CenterIndexedArray) = parent(A)
 
 function Base.showarg(io::IO, A::CenterIndexedArray, toplevel)
     print(io, "CenterIndexedArray(")
