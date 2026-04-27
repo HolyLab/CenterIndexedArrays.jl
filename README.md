@@ -1,6 +1,7 @@
 # CenterIndexedArrays
 
 [![Build Status](https://travis-ci.org/HolyLab/CenterIndexedArrays.jl.svg?branch=master)](https://travis-ci.org/HolyLab/CenterIndexedArrays.jl)
+[![Aqua QA](https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 A CenterIndexedArray is an array indexed symmetrically around its midpoint.
 Here's a quick demo:
