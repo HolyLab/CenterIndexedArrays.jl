@@ -105,6 +105,4 @@ function Base.showarg(io::IO, A::CenterIndexedArray, toplevel)
     toplevel && print(io, " with eltype ", eltype(A))
 end
 
-include("deprecated.jl")
-
 end  # module
