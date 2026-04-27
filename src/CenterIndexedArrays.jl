@@ -1,7 +1,7 @@
 module CenterIndexedArrays
 
-using Interpolations, OffsetArrays
-using OffsetArrays: IdentityUnitRange
+using Interpolations: Interpolations, AbstractInterpolation
+using OffsetArrays: OffsetArrays, OffsetArray
 
 export CenterIndexedArray
 
@@ -53,7 +53,7 @@ end
 
 # This is incomplete: ideally we wouldn't need SymAx in the first slot
 # as long as there was at least one SymAx.
-function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx,Vararg{Union{Int,<:IdentityUnitRange,SymAx}}}) where T
+function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx,Vararg{Union{Int,<:Base.IdentityUnitRange,SymAx}}}) where T
     torange(n) = isa(n, Int) ? Base.OneTo(n) : n
     return OffsetArray{T}(undef, map(torange, inds))
 end

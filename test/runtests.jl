@@ -3,6 +3,7 @@ using Interpolations, OffsetArrays
 using Test, Random
 using OffsetArrays: IdentityUnitRange
 using Aqua
+using ExplicitImports
 
 if !isdefined(@__MODULE__, :ambs)
     const ambs = detect_ambiguities(Base, Interpolations, OffsetArrays)
@@ -13,6 +14,10 @@ using CenterIndexedArrays: SymRange
 
 @testset "Aqua" begin
     Aqua.test_all(CenterIndexedArrays)
+end
+
+@testset "ExplicitImports" begin
+    test_explicit_imports(CenterIndexedArrays; all_qualified_accesses_are_public=false)
 end
 
 @testset "Ambiguities" begin
