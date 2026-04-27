@@ -56,6 +56,12 @@ end
     io = IOBuffer()
     print(io, r)
     @test String(take!(io)) == "SymRange(3)"
+
+    # Non-Int Integer constructor
+    @test SymRange(Int32(3)) === SymRange(3)
+
+    # SymRange(0) contains a single element, 0
+    @test collect(SymRange(0)) == [0]
 end
 
 @testset "Uninitialized" begin
@@ -183,4 +189,18 @@ end
     @test 2*A == CenterIndexedArray(2*dat)
     @test A+A == CenterIndexedArray(dat+dat)
     @test isa(A .+ 1, CenterIndexedArray)
+end
+
+@testset "Interpolations" begin
+    dat = rand(5, 7)
+    itp = interpolate(dat, BSpline(Linear()))
+    A = CenterIndexedArray(itp)
+    # Integer indexing
+    @test A[0, 0] ≈ dat[3, 4]
+    @test A[-2, -3] ≈ dat[1, 1]
+    @test @inferred(A[1, 2]) ≈ dat[4, 6]
+    # Fractional (non-integer) indexing
+    @test A[0.0, 0.0] ≈ dat[3, 4]
+    @test A[0.5, 0.5] ≈ itp(3.5, 4.5)
+    @test_throws BoundsError A[3, 0]
 end

@@ -17,16 +17,6 @@ Base.axes(r::SymRange) = (r,)
 
 @inline Base.unsafe_indices(r::SymRange) = (r,)
 
-function iterate(r::SymRange)
-    r.n == 0 && return nothing
-    first(r), first(r)
-end
-
-function iterate(r::SymRange, s)
-    s == last(r) && return nothing
-    copy(s+1), s+1
-end
-
 @inline function Base.getindex(v::SymRange, i::Int)
     @boundscheck abs(i) <= v.n || Base.throw_boundserror(v, i)
     return i
