@@ -4,6 +4,8 @@ struct SymRange <: AbstractUnitRange{Int}
     n::Int  # goes from -n:n
 end
 
+SymRange(n::Integer) = SymRange(Int(n))
+
 function SymRange(r::AbstractUnitRange)
     first(r) == -last(r) || error("cannot convert $r to a SymRange")
     SymRange(last(r))
