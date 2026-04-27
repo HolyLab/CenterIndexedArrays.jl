@@ -1,3 +1,10 @@
+"""
+    CenterIndexedArrays
+
+Provides `CenterIndexedArray`, an array type whose center element is at
+index `(0, 0, …)`. Valid indices along each dimension of size `2n+1`
+run from `-n` to `n`.
+"""
 module CenterIndexedArrays
 
 using Interpolations: Interpolations, AbstractInterpolation
@@ -8,11 +15,16 @@ export CenterIndexedArray
 include("symrange.jl")
 
 """
-A `CenterIndexedArray` is one for which the array center has indexes
-`0,0,...`. Along each coordinate, allowed indexes range from `-n:n`.
+    CenterIndexedArray(A::AbstractArray)
+    CenterIndexedArray{T}(undef, dims...)
+    CenterIndexedArray{T,N}(undef, dims...)
 
-CenterIndexedArray(A) "converts" `A` into a CenterIndexedArray. All
-the sizes of `A` must be odd.
+An array wrapper that re-indexes around zero: the center element is at
+index `(0, 0, …)`, and along each dimension of size `2n+1` the valid
+indices run from `-n` to `n`. All dimension sizes must be odd.
+
+The first form wraps `A` without copying. The `undef` forms allocate a
+new `Array{T}` with the given dimensions (each of which must be odd).
 """
 struct CenterIndexedArray{T,N,A<:AbstractArray} <: AbstractArray{T,N}
     data::A
