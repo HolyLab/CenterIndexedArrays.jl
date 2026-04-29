@@ -1,6 +1,6 @@
 name = "CenterIndexedArrays"
 uuid = "46a7138f-0d70-54e1-8ada-fb8296f91f24"
-version = "0.2.4"
+version = "1.0.0"
 authors = ["Tim Holy <tim.holy@gmail.com>"]
 
 [deps]
@@ -14,7 +14,7 @@ Interpolations = "0.11, 0.12, 0.13, 0.14, 0.15, 0.16"
 OffsetArrays = "0.10, 0.11, 1"
 Random = "1"
 Test = "1"
-julia = "1"
+julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
