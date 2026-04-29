@@ -1,18 +1,30 @@
+"""
+    CenterIndexedArrays
+
+Provides `CenterIndexedArray`, an array type whose center element is at
+index `(0, 0, …)`. Valid indices along each dimension of size `2n+1`
+run from `-n` to `n`.
+"""
 module CenterIndexedArrays
 
-using Interpolations, OffsetArrays
-using OffsetArrays: IdentityUnitRange
+using Interpolations: Interpolations, AbstractInterpolation
+using OffsetArrays: OffsetArrays, OffsetArray
 
 export CenterIndexedArray
 
 include("symrange.jl")
 
 """
-A `CenterIndexedArray` is one for which the array center has indexes
-`0,0,...`. Along each coordinate, allowed indexes range from `-n:n`.
+    CenterIndexedArray(A::AbstractArray)
+    CenterIndexedArray{T}(undef, dims...)
+    CenterIndexedArray{T,N}(undef, dims...)
 
-CenterIndexedArray(A) "converts" `A` into a CenterIndexedArray. All
-the sizes of `A` must be odd.
+An array wrapper that re-indexes around zero: the center element is at
+index `(0, 0, …)`, and along each dimension of size `2n+1` the valid
+indices run from `-n` to `n`. All dimension sizes must be odd.
+
+The first form wraps `A` without copying. The `undef` forms allocate a
+new `Array{T}` with the given dimensions (each of which must be odd).
 """
 struct CenterIndexedArray{T, N, A <: AbstractArray} <: AbstractArray{T, N}
     data::A
@@ -53,7 +65,7 @@ end
 
 # This is incomplete: ideally we wouldn't need SymAx in the first slot
 # as long as there was at least one SymAx.
-function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx, Vararg{Union{Int, <:IdentityUnitRange, SymAx}}}) where {T}
+function Base.similar(A::CenterIndexedArray, ::Type{T}, inds::Tuple{SymAx, Vararg{Union{Int, <:Base.IdentityUnitRange, SymAx}}}) where {T}
     torange(n) = isa(n, Int) ? Base.OneTo(n) : n
     return OffsetArray{T}(undef, map(torange, inds))
 end
@@ -104,7 +116,5 @@ function Base.showarg(io::IO, A::CenterIndexedArray, toplevel)
     print(io, ')')
     return toplevel && print(io, " with eltype ", eltype(A))
 end
-
-include("deprecated.jl")
 
 end  # module
