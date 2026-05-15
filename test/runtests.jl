@@ -31,6 +31,7 @@ end
     @test last(r) == 3
     @test axes(r) == (r,)
     @test axes(r, 1) == r
+    @test @inferred(Base.unsafe_indices(r)) === (r,)
     @test size(r) == (7,)
 
     items = []
